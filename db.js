@@ -1,5 +1,5 @@
 let mongoose = require("mongoose");
-mongoose.connect("mongodb+srv://100xmediasomething_db_user:cYsUiBMgrTJgBjr7@automationapp.varqofb.mongodb.net/todo-app-harkirat");
+mongoose.connect("");
 
 
 let userSchema = new mongoose.Schema({

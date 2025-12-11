@@ -11,7 +11,7 @@ let userSchema = z.object({
     name: z.string(),
     password: z.string(),
     role: z.enum(["student", "admin"]),
-    email: z.email()
+    email: z.string().email()
 })
 
 
@@ -62,9 +62,9 @@ app.post("/api/auth/signup", async (req, res) => {
 
 
 app.post("/api/auth/signin", async (req, res) => {
-    let { name, password } = req.body;
+    let { email, password } = req.body;
 
-    let user = await userModel.findOne({ name, password });
+    let user = await userModel.findOne({ email, password });
 
     if (!user) {
         res.status(400).json({
@@ -108,7 +108,7 @@ function middlewarAuth(req, res, next) {
 
 app.get("/api/auth/me", middlewarAuth, async (req, res) => {
     try {
-       
+
         let userId = req.userId;
         let role = req.role;
         let user = await userModel.findOne({ _id: userId });
@@ -161,7 +161,7 @@ app.post("/api/quiz", middlewarAuth, async (req, res) => {
             return;
         }
         let quiz = await quizModel.create({
-            title: data.title, questions: data.questions, correctoption: data.correctoption
+            title: data.title, questions: data.questions
         })
         res.status(201).json({
             success: true,
@@ -184,41 +184,50 @@ app.post("/api/quiz", middlewarAuth, async (req, res) => {
 
 app.post("/api/quiz/:quizId/questions", middlewarAuth, async (req, res) => {
     try {
-        let userId = req.userId;
-        let role = req.role;
-        let quizId = req.params.quizId;
-        let { title, options, correctoption } = req.body;
-        if (role !== "admin") {
-            res.status(401).json({
+        if (req.role !== "admin") {
+            return res.status(401).json({
                 success: false,
                 error: "Unauthorized, admin access required"
-            })
-            return;
+            });
         }
-        let quiz = await quizModel.findOne({ _id: quizId })
+
+        // ✅ Validate question schema using Zod
+        let parsed = questionSchema.safeParse(req.body);
+        if (!parsed.success) {
+            return res.status(400).json({
+                success: false,
+                error: "Invalid question schema"
+            });
+        }
+
+        let quizId = req.params.quizId;
+
+        let quiz = await quizModel.findOne({ _id: quizId });
         if (!quiz) {
-            res.status(400).json({
+            return res.status(400).json({
                 success: false,
                 error: "wrong quizId"
-            })
-            return;
+            });
         }
-        quiz.questions.push({ title, options, correctoption });
-        quiz.save();
+
+        // ✅ Add validated data only
+        quiz.questions.push(parsed.data);
+
+        await quiz.save();
+
         res.status(201).json({
             success: true,
             data: quiz
-        })
-    }
-    catch (e) {
+        });
+
+    } catch (e) {
         res.status(400).json({
             success: false,
-            error: "invaild request schema"
-        })
-        return;
-
+            error: "invalid request schema"
+        });
     }
-})
+});
+
 
 
 
