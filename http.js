@@ -191,7 +191,7 @@ app.post("/api/quiz/:quizId/questions", middlewarAuth, async (req, res) => {
             });
         }
 
-        // ✅ Validate question schema using Zod
+        
         let parsed = questionSchema.safeParse(req.body);
         if (!parsed.success) {
             return res.status(400).json({
@@ -210,7 +210,7 @@ app.post("/api/quiz/:quizId/questions", middlewarAuth, async (req, res) => {
             });
         }
 
-        // ✅ Add validated data only
+       
         quiz.questions.push(parsed.data);
 
         await quiz.save();
